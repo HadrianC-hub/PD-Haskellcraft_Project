@@ -325,7 +325,13 @@ def on_press(key):
                 resources["wood"].remove(position)
     except AttributeError:
         pass
+# Función para ejecutar el turno de la IA de juego
+def AI_Turn():
+    global resources, opponent_energy, opponent_hunger, opponent_thirst, opponent_camp_position, opponent_actions
+    
+    pass
 
+    resources = regenerate_resources(resources, RESOURCE_COUNT, MAP_SIZE, player_camp_position, opponent_camp_position)
 
 
 
