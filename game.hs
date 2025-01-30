@@ -18,3 +18,17 @@ data GameConfig = GameConfig
     , actualWeather :: Int  -- Nuevo: Estado del clima
     }
 
+-- Lógica principal del juego
+main :: IO ()
+main = do
+    args <- getArgs
+    let config = case args of
+            (n:e:h:t:a:x1:y1:x2:y2:w:_) -> GameConfig (read n) (read e) (read h) (read t) (read a) (read x1, read y1) (read x2, read y2) (read w)
+            (n:e:h:t:a:x1:y1:x2:y2:_)   -> GameConfig (read n) (read e) (read h) (read t) (read a) (read x1, read y1) (read x2, read y2) 0
+            (n:e:h:t:a:x1:y1:_)         -> GameConfig (read n) (read e) (read h) (read t) (read a) (read x1, read y1) (0,0) 0
+            (n:e:h:t:a:_)               -> GameConfig (read n) (read e) (read h) (read t) (read a) (0,0) (0,0) 0
+            _                           -> GameConfig 10 100 50 50 3 (0,0) (0,0) 0
+
+    -- Iniciar el juego con la posición inicial del primer jugador
+    gameLoop config (player1Start config, initialEnergy config, initialHunger config, initialThirst config, initialActions config)
+
