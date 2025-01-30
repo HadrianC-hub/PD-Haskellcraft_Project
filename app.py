@@ -1,21 +1,24 @@
 import subprocess
 import os
 import time
-from pynput import keyboard  # Asegúrate de que esta biblioteca esté instalada
+from pynput import keyboard
 import shutil
 import random
+import sys
 
 # Variables globales
 MAP_SIZE = 10
 MOVE_DELAY = 0.1
-WEATHER = 3       # 0=nublado   1=soleado   2=lluvioso   3=neblinoso   4=frio
+AI_MOVE_DELAY = 0.5
+WEATHER = 3                 # 0=nublado   1=soleado   2=lluvioso   3=neblinoso   4=frio
 last_command = "init"
 exit_game = False
 campament_trigger = False
 water_trigger = False
 food_trigger = False
 wood_trigger = False
-position = (0,0)
+day_of_game = 1
+win_condition = False
 
 # Variables iniciales de la partida
 INITIAL_ENERGY = 50
@@ -32,16 +35,17 @@ resources = {"wood": [], "water": [], "food": []}
 RESOURCE_COUNT = 3  # Número máximo de cada tipo de recurso en el mapa
 
 # Variables del jugador
-player_energy = 100
-player_hunger = 5
-player_thirst = 3
+player_energy = 50
+player_hunger = 50
+player_thirst = 30
 player_actions = 3
 player_camp_position = (0,0)
+position = (0,0)
 
 # Variables del oponente
-opponent_energy = 100
-opponent_hunger = 5
-opponent_thirst = 3
+opponent_energy = 50
+opponent_hunger = 50
+opponent_thirst = 30
 opponent_actions = 3
 opponent_camp_position = (MAP_SIZE-1,MAP_SIZE-1)
 opponent_position = (0,0)
@@ -85,9 +89,10 @@ def draw_main_menu():
     description_lines = description.split("\n")
     for line in description_lines:
         print(line.center(terminal_width))
+
 # Dibujar el mapa del juego
 def draw_map(position, size, player_energy, opponent_energy, player_actions):
-    global player_camp_position, opponent_camp_position, WEATHER
+    global player_camp_position, opponent_camp_position, WEATHER, day_of_game
 
     # Obtener las dimensiones actuales de la consola
     terminal_size = shutil.get_terminal_size()
@@ -96,7 +101,7 @@ def draw_map(position, size, player_energy, opponent_energy, player_actions):
 
     # Calcular márgenes para centrar el mapa
     horizontal_margin = max((terminal_width - (size * 2)) // 2, 0)  # Cada celda ocupa 2 espacios (carácter + espacio)
-    vertical_margin = max((terminal_height - size) // 2, 0)
+    vertical_margin = max(((terminal_height - size) // 2)-5, 0)
 
     os.system("cls" if os.name == "nt" else "clear")  # Limpiar consola
 
@@ -154,16 +159,53 @@ def draw_map(position, size, player_energy, opponent_energy, player_actions):
         print()  # Nueva línea al final de cada fila
     print("\n")
     print(f"Quedan {player_actions} acciones disponibles para hoy".center(terminal_width))
+
+    # Imprimir información de estado:
+    print("\n")
+    print(f"DIARIO DEL RECOLECTOR: DÍA {day_of_game}".center(terminal_width))
+    if day_weather == "NUBLADO":
+        print("El día está nublado. Es un clima agradable para largas caminatas y recolectar recursos.".center(terminal_width))
+        print("\n")
+    if day_weather == "SOLEADO":
+        print("El día está soleado. Mientras más camino, me entra sed y cansancio".center(terminal_width))
+        print("\n")
+    if day_weather == "LLUVIOSO":
+        print("El día está lluvioso. No tendré problemas con pasar sed, pero el descanso no será lo mismo. Algunos árboles no me protegerán de la lluvia.".center(terminal_width))
+        print("\n")
+    if day_weather == "NEBLINOSO":
+        print("El día está neblinoso. Se me dificulta la visibilidad. Tendré que recordar dónde estaban los recursos antes de ir a por ellos.".center(terminal_width))
+        print("\n")
+    if day_weather == "FRÍO":
+        print("El día está frio. No veo frutas que recolectar, ni animales que cazar. Tendrá que bastarme con lo poco que encuentre. No me siento las piernas...".center(terminal_width))
+        print("\n")
+
 # Función para mostrar la pantalla de GAME OVER
 def show_game_over():
+    global win_condition
     os.system("cls" if os.name == "nt" else "clear")  # Limpiar consola
     print("\n\n\n")
-    print("GAME OVER!")
+    if win_condition:
+        print("YOU WIN!!!")
+    else:
+        print("GAME OVER...")
     print("\n\nPresiona cualquier tecla para salir...")
     with keyboard.Events() as events:
         events.get()  # Espera a que se presione cualquier tecla
+    quit()
 
-#           Manejo de estado de recursos del juego
+# Función para quitar el juego
+def quit():
+    listener.stop()
+    haskell_process.terminate()
+    haskell_process.wait()
+    ai_process.terminate()
+    ai_process.wait()
+    walk_process.terminate()
+    walk_process.wait()
+    sys.exit()
+
+
+#           Manejo de estados del juego
 
 # Función para generar recursos aleatoriamente
 def generate_resources(size, count):
@@ -182,6 +224,7 @@ def generate_resources(size, count):
     resources["wood"] = positions[:count]
     resources["water"] = positions[count:2*count]
     resources["food"] = positions[2*count:]
+
 # Funcion para regenerar recursos
 def regenerate_resources(resources, count, map_size, player_camp, opponent_camp):
     # Separando en arrays los valores de recursos
@@ -242,6 +285,7 @@ def regenerate_resources(resources, count, map_size, player_camp, opponent_camp)
     # Unificando en un array los valores devueltos
     resources = {"wood": wood, "water": water, "food": food}
     return resources
+
 # Funcion para obtener el tipo de recurso en una posición
 def get_resource_type_at_position(position, resources):
     global player_camp_position
@@ -251,6 +295,7 @@ def get_resource_type_at_position(position, resources):
         if position in positions:
             return resource_type  # Devuelve el tipo de recurso encontrado
     return None  # No se encontró ningún recurso en la posición
+
 # Funcion para obtener el estado de recursos
 def get_triggers_status():
     global campament_trigger, water_trigger, food_trigger, wood_trigger
@@ -263,6 +308,7 @@ def get_triggers_status():
         food_trigger = True
     if obtained_res == "camp":
         campament_trigger = True
+
 # Función para reiniciar el estado de recursos
 def restart_triggers():
     global campament_trigger, water_trigger, food_trigger, wood_trigger
@@ -274,6 +320,7 @@ def restart_triggers():
         water_trigger = False
     if food_trigger:
         food_trigger = False
+
 # Función para generar posición de campamentos aleatoriamente
 def set_camps(size):
     global player_camp_position, opponent_camp_position
@@ -286,16 +333,44 @@ def set_camps(size):
     camps = list(camps)
     player_camp_position = camps[0]
     opponent_camp_position = camps[1]
+
 # Función para cambiar el clima
 def change_weather():
     global WEATHER
     WEATHER = random.randint(0, 4)
 
+# Función para mover a la IA por el mapa
+def move_towards(target_x, target_y):
+    global opponent_position, opponent_energy, opponent_thirst, opponent_hunger, win_condition
 
+    if opponent_position[0] < target_x:
+        opponent_position = (opponent_position[0] + 1, opponent_position[1])
+    elif opponent_position[0] > target_x:
+        opponent_position = (opponent_position[0] - 1, opponent_position[1])
+    elif opponent_position[1] < target_y:
+        opponent_position = (opponent_position[0], opponent_position[1] + 1)
+    elif opponent_position[1] > target_y:
+        opponent_position = (opponent_position[0], opponent_position[1] - 1)
+
+    # Verificar si la IA perdió la partida tras el último movimiento
+    if opponent_energy <=0 or opponent_hunger <=0 or opponent_thirst <=0:
+        win_condition = True
+        show_game_over()
+
+    # Obtener del script de haskell los valores de estadísticas a poner
+    walk_process.stdin.write(f"{WEATHER} {opponent_energy} {opponent_hunger} {opponent_thirst}\n")
+    walk_process.stdin.flush()
+    new_stats = walk_process.stdout.readline().strip()
+    opponent_energy, opponent_hunger, opponent_thirst = map(int, new_stats.split())
+
+    # Dibujar el mapa
+    draw_map(position, MAP_SIZE, player_energy, opponent_energy, player_actions)
+    time.sleep(AI_MOVE_DELAY)  # Pequeña pausa para visualizar el movimiento
 
 # Función para determinar la tecla presionada y la acción a ejecutar
 def on_press(key):
     global last_command, exit_game, show_description, water_trigger, food_trigger, wood_trigger, campament_trigger, resources, position
+    # Recibe entrada del teclado y ejecuta un comando
     try:
         if key == keyboard.Key.up:
             last_command = "up"
@@ -325,14 +400,55 @@ def on_press(key):
                 resources["wood"].remove(position)
     except AttributeError:
         pass
+
 # Función para ejecutar el turno de la IA de juego
 def AI_Turn():
-    global resources, opponent_energy, opponent_hunger, opponent_thirst, opponent_camp_position, opponent_actions
-    
-    pass
+    global opponent_energy, opponent_hunger, opponent_thirst, opponent_camp_position, opponent_actions, opponent_position
 
-    resources = regenerate_resources(resources, RESOURCE_COUNT, MAP_SIZE, player_camp_position, opponent_camp_position)
+    while opponent_actions > 0:
+        # Formatear la entrada para Haskell
+        wood = " ".join(f"{x} {y}" for x, y in resources["wood"])
+        water = " ".join(f"{x} {y}" for x, y in resources["water"])
+        food = " ".join(f"{x} {y}" for x, y in resources["food"])
+        input_data = f"{len(resources['wood'])} {wood} {len(resources['water'])} {water} {len(resources['food'])} {food} {opponent_position[0]} {opponent_position[1]} {opponent_camp_position[0]} {opponent_camp_position[1]}\n"
 
+        # Ejecutar Haskell y obtener el objetivo
+        ai_process.stdin.write(f"{input_data}\n")
+        ai_process.stdin.flush()
+        target_pos = ai_process.stdout.readline().strip()
+        if target_pos:
+            target_x, target_y = map(int, target_pos.split())
+        else:
+            target_x, target_y = opponent_camp_position[0], opponent_camp_position[1]
+
+        # Mover la IA hasta el recurso
+        while opponent_position != (target_x, target_y):
+            move_towards(target_x, target_y)
+            if opponent_position == opponent_camp_position:
+                return  # Finaliza el turno
+
+        # Consumir el recurso si está en la posición correcta
+        resource_type = None
+        if opponent_position in resources["wood"]:
+            resource_type = "wood"
+            resources["wood"].remove(opponent_position)
+        elif opponent_position in resources["water"]:
+            resource_type = "water"
+            resources["water"].remove(opponent_position)
+        elif opponent_position in resources["food"]:
+            resource_type = "food"
+            resources["food"].remove(opponent_position)
+
+        if resource_type:
+            input_data = f"{resource_type} {WEATHER} {opponent_energy} {opponent_hunger} {opponent_thirst} {INITIAL_ENERGY} {INITIAL_HUNGER} {INITIAL_THIRST}\n"
+            new_stats = subprocess.run(["runhaskell", "consume.hs"], input=input_data, text=True, capture_output=True).stdout.strip()
+            opponent_energy, opponent_hunger, opponent_thirst = map(int, new_stats.split())
+        # Restar acción de consumir recurso
+        opponent_actions -= 1
+
+    # Regresar al campamento cuando no haya más acciones o recursos
+    while opponent_position != opponent_camp_position:
+        move_towards(opponent_camp_position[0], opponent_camp_position[1])
 
 
 #           Inicio del juego:
@@ -349,6 +465,7 @@ try:
         events.get()  
 
     # INICIALIZACIÓN DE LA PARTIDA
+    print("CARGANDO...")
     set_camps(MAP_SIZE)
     generate_resources(MAP_SIZE, RESOURCE_COUNT)
     position = player_camp_position
@@ -366,6 +483,22 @@ try:
         stdout=subprocess.PIPE,
         text=True
 )
+
+    ai_process = subprocess.Popen(
+        ["runhaskell", "ai.hs"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True
+    )
+
+    walk_process = subprocess.Popen(
+        ["runhaskell", "walk.hs"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True
+    )
+
+
     # BUCLE DEL JUEGO
     while not exit_game:
         # Recibe los valores iniciales (o actuales) de Haskell
@@ -405,10 +538,16 @@ try:
         # Verificando si es el turno de la IA
         if last_command == "end_turn":
             AI_Turn()
+            opponent_actions = INITIAL_ACTIONS
             change_weather()
+            last_command = "change_weather"
+            day_of_game = day_of_game + 1
+            regenerate_resources(resources, RESOURCE_COUNT, MAP_SIZE, player_camp_position, opponent_camp_position)
 
         # Cargando nuevo estado de juego en Haskell para su procesamiento
         haskell_process.stdin.write(last_command + "\n")
+        if(last_command=="change_weather"):
+            haskell_process.stdin.write(str(WEATHER) + "\n")
         haskell_process.stdin.flush()
         last_command = None
 
@@ -424,6 +563,4 @@ except KeyboardInterrupt:
     print("Juego terminado.")
     time.sleep(1)
 finally:
-    listener.stop()
-    haskell_process.terminate()
-    print("\nGracias por jugar!")
+    quit()
