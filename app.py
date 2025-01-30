@@ -182,3 +182,63 @@ def generate_resources(size, count):
     resources["wood"] = positions[:count]
     resources["water"] = positions[count:2*count]
     resources["food"] = positions[2*count:]
+# Funcion para regenerar recursos
+def regenerate_resources(resources, count, map_size, player_camp, opponent_camp):
+    # Separando en arrays los valores de recursos
+    wood = resources["wood"]
+    water = resources["water"]
+    food = resources["food"]
+    camps = [player_camp, opponent_camp]
+
+    # Determinar cuántos recursos se necesitan
+    total_to_generate = count
+    generated = 0
+
+    # Crear un conjunto con todas las posiciones ocupadas
+    occupied_positions = set(wood + water + food + camps)
+
+    # Listar los recursos que aún pueden recibir elementos
+    available_resources = []
+    if len(wood) < count:
+        available_resources.append("wood")
+    if len(water) < count:
+        available_resources.append("water")
+    if len(food) < count:
+        available_resources.append("food")
+
+    # Generar nuevas posiciones de recursos hasta completar `count`
+    while generated < total_to_generate and available_resources:
+        # Seleccionar un recurso aleatorio de los que aún pueden recibir más elementos
+        resource_type = random.choice(available_resources)
+
+        # Generar una posición aleatoria que no esté ocupada
+        while True:
+            new_x = random.randint(0, map_size - 1)
+            new_y = random.randint(0, map_size - 1)
+            new_pos = (new_x, new_y)
+            if new_pos not in occupied_positions:
+                break
+
+        # Insertar la nueva posición en el recurso correspondiente
+        if resource_type == "wood":
+            wood.append(new_pos)
+        elif resource_type == "water":
+            water.append(new_pos)
+        elif resource_type == "food":
+            food.append(new_pos)
+
+        # Agregar la nueva posición a las ocupadas
+        occupied_positions.add(new_pos)
+        generated += 1
+
+        # Si un recurso llega al máximo, eliminarlo de la lista de disponibles
+        if len(wood) >= count and "wood" in available_resources:
+            available_resources.remove("wood")
+        if len(water) >= count and "water" in available_resources:
+            available_resources.remove("water")
+        if len(food) >= count and "food" in available_resources:
+            available_resources.remove("food")
+    
+    # Unificando en un array los valores devueltos
+    resources = {"wood": wood, "water": water, "food": food}
+    return resources
