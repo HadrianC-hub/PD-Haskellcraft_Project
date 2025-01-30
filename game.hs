@@ -44,3 +44,31 @@ gameLoop config state@((x, y), energy, hunger, thirst, actions) = do
     let newState = updateState config command state
     gameLoop config newState
 
+-- Actualización del estado del juego según el clima
+updateState :: GameConfig -> String -> GameState -> GameState
+updateState config command ((x, y), energy, hunger, thirst, actions) =
+    let weather = actualWeather config
+        movementCost = case weather of
+            1 -> 2  -- Soleado: el movimiento cuesta el doble de energía y sed
+            4 -> 2  -- Frío: el movimiento cuesta el doble de energía
+            _ -> 1  -- Normal
+
+        newPosition = case command of
+            "up"    -> (x, max 0 (y - 1))
+            "down"  -> (x, min (mapSize config - 1) (y + 1))
+            "left"  -> (max 0 (x - 1), y)
+            "right" -> (min (mapSize config - 1) (x + 1), y)
+            _       -> (x, y)
+
+        energyAfterMove = if newPosition /= (x, y) then max 0 (energy - movementCost) else energy
+        hungerAfterMove = if newPosition /= (x, y) then max 0 (hunger - 1) else hunger
+        thirstAfterMove = if newPosition /= (x, y) then max 0 (thirst - (if weather == 1 then 2 else 1)) else thirst
+
+        -- Actualizar cantidad de acciones disponibles si el jugador ejecutó una acción
+        newActions = if command `elem` ["drink_water", "eat_food", "use_wood"] && actions > 0
+                then actions - 1
+                else actions
+
+        
+
+    in (newPosition, energyAfterMove, hungerAfterMove, thirstAfterMove, newActions)
