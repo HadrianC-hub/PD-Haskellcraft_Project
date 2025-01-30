@@ -274,7 +274,22 @@ def restart_triggers():
         water_trigger = False
     if food_trigger:
         food_trigger = False
-
+# Función para generar posición de campamentos aleatoriamente
+def set_camps(size):
+    global player_camp_position, opponent_camp_position
+    camps = set()  # Usamos un conjunto para evitar duplicados
+    while len(camps) < 2:  # Total de campamentos a generar
+        x = random.randint(0, size - 1)
+        y = random.randint(0, size - 1)
+        camps.add((x, y))
+    
+    camps = list(camps)
+    player_camp_position = camps[0]
+    opponent_camp_position = camps[1]
+# Función para cambiar el clima
+def change_weather():
+    global WEATHER
+    WEATHER = random.randint(0, 4)
 
 
 
@@ -310,3 +325,6 @@ def on_press(key):
                 resources["wood"].remove(position)
     except AttributeError:
         pass
+
+
+
