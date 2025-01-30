@@ -162,3 +162,23 @@ def show_game_over():
     print("\n\nPresiona cualquier tecla para salir...")
     with keyboard.Events() as events:
         events.get()  # Espera a que se presione cualquier tecla
+
+#           Manejo de estado de recursos del juego
+
+# Función para generar recursos aleatoriamente
+def generate_resources(size, count):
+    """Genera posiciones aleatorias para los recursos en el mapa."""
+    positions = set()  # Usamos un conjunto para evitar duplicados
+    while len(positions) < count * 3:  # Total de recursos a generar
+        x = random.randint(0, size - 1)
+        y = random.randint(0, size - 1)
+        # Verificando que las posiciones generadas no sean de los campamentos ya colocados
+        while (x,y) == player_camp_position or (x,y) == opponent_camp_position:
+            x = random.randint(0, size - 1)
+            y = random.randint(0, size - 1)
+        positions.add((x, y))
+    
+    positions = list(positions)
+    resources["wood"] = positions[:count]
+    resources["water"] = positions[count:2*count]
+    resources["food"] = positions[2*count:]
