@@ -328,3 +328,95 @@ def on_press(key):
 
 
 
+#           Inicio del juego:
+
+# Inicializando bibliotecas:
+listener = keyboard.Listener(on_press=on_press)
+listener.start()
+
+try:
+    # INICIO DEL MENÚ PRINCIPAL
+    draw_main_menu()
+    # Espera a que se presione cualquier tecla
+    with keyboard.Events() as events:
+        events.get()  
+
+    # INICIALIZACIÓN DE LA PARTIDA
+    set_camps(MAP_SIZE)
+    generate_resources(MAP_SIZE, RESOURCE_COUNT)
+    position = player_camp_position
+    opponent_position = opponent_camp_position
+    INITIAL_X_P1 = player_camp_position[0]
+    INITIAL_Y_P1 = player_camp_position[1]
+    INITIAL_X_P2 = opponent_camp_position[0]
+    INITIAL_Y_P2 = opponent_camp_position[1]
+    change_weather()
+
+    # Ejecutar estado inicial de Haskell
+    haskell_process = subprocess.Popen(
+        ["runhaskell", "game.hs", str(MAP_SIZE), str(INITIAL_ENERGY), str(INITIAL_HUNGER), str(INITIAL_THIRST), str(INITIAL_ACTIONS), str(INITIAL_X_P1), str(INITIAL_Y_P1), str(INITIAL_X_P2), str(INITIAL_Y_P2), str(WEATHER)],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        text=True
+)
+    # BUCLE DEL JUEGO
+    while not exit_game:
+        # Recibe los valores iniciales (o actuales) de Haskell
+        state = haskell_process.stdout.readline().strip()
+        if not state:
+            break
+
+        # Eliminar espacios adicionales y caracteres no deseados
+        state = state.strip().replace("(", "").replace(")", "").strip()
+        # Extraer partes separadas por comas
+        parts = state.split(",")
+
+        # Obtener estadísticas
+        x, y = map(int, parts[:2])
+        player_energy = int(parts[2])
+        position = (x, y)
+        player_hunger = int(parts[3])
+        player_thirst = int(parts[4])
+        player_actions = int(parts[5])
+
+        # Dibujar estado del mapa actual
+        draw_map(position, MAP_SIZE, player_energy, opponent_energy, player_actions)
+
+        #Reiniciando estados de posición
+        restart_triggers()
+        # Cargando estado de posición
+        get_triggers_status()
+
+        # Verificando si el jugador realizó alguna acción
+        while last_command is None and not exit_game:
+            pass
+
+        # Verificando fin del juego
+        if exit_game:
+            break
+
+        # Verificando si es el turno de la IA
+        if last_command == "end_turn":
+            AI_Turn()
+            change_weather()
+
+        # Cargando nuevo estado de juego en Haskell para su procesamiento
+        haskell_process.stdin.write(last_command + "\n")
+        haskell_process.stdin.flush()
+        last_command = None
+
+        # Condiciones de VICTORIA/DERROTA
+        if player_energy <= 0 or player_hunger <= 0 or player_thirst <= 0:
+            show_game_over()
+            break
+
+        # Esperando tiempo de refrescado antes de volver a cargar el ciclo
+        time.sleep(MOVE_DELAY)
+
+except KeyboardInterrupt:
+    print("Juego terminado.")
+    time.sleep(1)
+finally:
+    listener.stop()
+    haskell_process.terminate()
+    print("\nGracias por jugar!")
