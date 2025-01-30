@@ -32,3 +32,15 @@ main = do
     -- Iniciar el juego con la posición inicial del primer jugador
     gameLoop config (player1Start config, initialEnergy config, initialHunger config, initialThirst config, initialActions config)
 
+-- Bucle principal del juego
+gameLoop :: GameConfig -> GameState -> IO ()
+gameLoop config state@((x, y), energy, hunger, thirst, actions) = do
+    -- Mostrar estado actual
+    putStrLn $ show (x, y, energy, hunger, thirst, actions, actualWeather config)
+    hFlush stdout  -- Asegurar salida inmediata
+    -- Leer comando del usuario
+    command <- getLine
+    -- Actualizar estado
+    let newState = updateState config command state
+    gameLoop config newState
+
