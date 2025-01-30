@@ -46,3 +46,50 @@ opponent_actions = 3
 opponent_camp_position = (MAP_SIZE-1,MAP_SIZE-1)
 opponent_position = (0,0)
 
+#           Funciones de dibujado:
+
+# Dibujar menú principal
+def draw_main_menu():
+    title = """
+  _   _           _   _                    _____  _   
+ | | | |         | | | |                  |  ___|| |  
+ | |_| | __ _ ___| |_| /  ___  ____  __ _ | |_ |_   _|
+ |  _  |/ _` / __| '_ \ / ___||  __|/ _` /|  _|  | |  
+ | | | | (_| \__ \ | | | |___ | |  | (_|  | |    | |  
+ \_| |_/\__,_|___/_| |_|\ ___||_|   \__,_||_|    |_|  
+    """
+    
+    description = """
+    Un juego hecho por:
+    Adrián Hernández Castellanos C-312
+    Laura Martir Beltrán C-311
+    Yesenia Valdés Rodríguez C-311
+    y Haskell...
+
+    Presione cualquier tecla para jugar !!!
+    """
+
+    # Obtener tamaño de la consola
+    terminal_size = shutil.get_terminal_size()
+    terminal_width = terminal_size.columns
+
+    os.system("cls" if os.name == "nt" else "clear")  # Limpiar consola
+
+    # Calcular margen horizontal para centrar el texto
+    title_lines = title.split("\n")
+    for line in title_lines:
+        print(line.center(terminal_width))
+
+    print("\n")
+
+    description_lines = description.split("\n")
+    for line in description_lines:
+        print(line.center(terminal_width))
+# Función para mostrar la pantalla de GAME OVER
+def show_game_over():
+    os.system("cls" if os.name == "nt" else "clear")  # Limpiar consola
+    print("\n\n\n")
+    print("GAME OVER!")
+    print("\n\nPresiona cualquier tecla para salir...")
+    with keyboard.Events() as events:
+        events.get()  # Espera a que se presione cualquier tecla
