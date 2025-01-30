@@ -274,3 +274,39 @@ def restart_triggers():
         water_trigger = False
     if food_trigger:
         food_trigger = False
+
+
+
+
+# Función para determinar la tecla presionada y la acción a ejecutar
+def on_press(key):
+    global last_command, exit_game, show_description, water_trigger, food_trigger, wood_trigger, campament_trigger, resources, position
+    try:
+        if key == keyboard.Key.up:
+            last_command = "up"
+        elif key == keyboard.Key.down:
+            last_command = "down"
+        elif key == keyboard.Key.left:
+            last_command = "left"
+        elif key == keyboard.Key.right:
+            last_command = "right"
+        elif hasattr(key, 'char') and key.char == 'q':  # Salir del juego
+            exit_game = True
+        elif hasattr(key, 'char') and key.char in ('x', 'X'):  # Detección de "X" en minúscula o mayúscula
+            if campament_trigger:
+                last_command = "end_turn"
+                campament_trigger = False
+            if water_trigger == True and player_actions > 0:
+                last_command = "drink_water"
+                water_trigger = False
+                resources["water"].remove(position)
+            if food_trigger == True and player_actions > 0:
+                last_command = "eat_food"
+                food_trigger = False
+                resources["food"].remove(position)
+            if wood_trigger == True and player_actions > 0:
+                last_command = "use_wood"
+                wood_trigger = False
+                resources["wood"].remove(position)
+    except AttributeError:
+        pass
