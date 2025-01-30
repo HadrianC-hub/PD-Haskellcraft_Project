@@ -69,6 +69,17 @@ updateState config command ((x, y), energy, hunger, thirst, actions) =
                 then actions - 1
                 else actions
 
-        
+        -- Ajustes según el clima
+        newEnergy = if command == "use_wood"
+            then min (initialEnergy config) (energyAfterMove + (if weather == 2 then 5 else 10)) -- Lluvia = 5, Normal = 10
+            else energyAfterMove
 
-    in (newPosition, energyAfterMove, hungerAfterMove, thirstAfterMove, newActions)
+        newHunger = if command == "eat_food"
+            then min (initialHunger config) (hungerAfterMove + (if weather == 4 then 5 else 10)) -- Frío = 5, Normal = 10
+            else hungerAfterMove
+
+        newThirst = if command == "drink_water"
+            then min (initialThirst config) (thirstAfterMove + (if weather == 2 then 10 else if weather == 4 then 3 else 5)) -- Lluvia = 10, Normal = 5
+            else thirstAfterMove
+
+    in (newPosition, newEnergy, newHunger, newThirst, newActions)
