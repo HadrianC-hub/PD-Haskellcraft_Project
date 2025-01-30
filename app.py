@@ -242,3 +242,35 @@ def regenerate_resources(resources, count, map_size, player_camp, opponent_camp)
     # Unificando en un array los valores devueltos
     resources = {"wood": wood, "water": water, "food": food}
     return resources
+# Funcion para obtener el tipo de recurso en una posición
+def get_resource_type_at_position(position, resources):
+    global player_camp_position
+    if position == player_camp_position:
+        return "camp"
+    for resource_type, positions in resources.items():
+        if position in positions:
+            return resource_type  # Devuelve el tipo de recurso encontrado
+    return None  # No se encontró ningún recurso en la posición
+# Funcion para obtener el estado de recursos
+def get_triggers_status():
+    global campament_trigger, water_trigger, food_trigger, wood_trigger
+    obtained_res = get_resource_type_at_position(position, resources)
+    if obtained_res == "wood":
+        wood_trigger = True
+    if obtained_res == "water":
+        water_trigger = True
+    if obtained_res == "food":
+        food_trigger = True
+    if obtained_res == "camp":
+        campament_trigger = True
+# Función para reiniciar el estado de recursos
+def restart_triggers():
+    global campament_trigger, water_trigger, food_trigger, wood_trigger
+    if campament_trigger:
+        campament_trigger = False
+    if wood_trigger:
+        wood_trigger = False
+    if water_trigger:
+        water_trigger = False
+    if food_trigger:
+        food_trigger = False
