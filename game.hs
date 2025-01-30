@@ -30,25 +30,36 @@ main = do
             _                           -> GameConfig 10 100 50 50 3 (0,0) (0,0) 0
 
     -- Iniciar el juego con la posición inicial del primer jugador
-    gameLoop config (player1Start config, initialEnergy config, initialHunger config, initialThirst config, initialActions config)
+    gameLoop config (actualWeather config) (player1Start config, initialEnergy config, initialHunger config, initialThirst config, initialActions config)
 
 -- Bucle principal del juego
-gameLoop :: GameConfig -> GameState -> IO ()
-gameLoop config state@((x, y), energy, hunger, thirst, actions) = do
-    -- Mostrar estado actual
-    putStrLn $ show (x, y, energy, hunger, thirst, actions, actualWeather config)
+gameLoop :: GameConfig -> Int -> GameState -> IO ()
+gameLoop config currentWeather state@((x, y), energy, hunger, thirst, actions) = do
+    -- Mostrar estado actual con clima actualizado
+    putStrLn $ show (x, y, energy, hunger, thirst, actions, currentWeather)
     hFlush stdout  -- Asegurar salida inmediata
+
     -- Leer comando del usuario
     command <- getLine
+
+    -- Solo actualizar el clima si se recibe el comando adecuado
+    newWeather <-
+        if command == "change_weather"
+            then do
+                newWeatherStr <- getLine
+                return (read newWeatherStr :: Int)
+            else return currentWeather
+
     -- Actualizar estado
-    let newState = updateState config command state
-    gameLoop config newState
+    let newState = updateState config newWeather command state
+
+    -- Llamada recursiva con el nuevo clima
+    gameLoop config newWeather newState
 
 -- Actualización del estado del juego según el clima
-updateState :: GameConfig -> String -> GameState -> GameState
-updateState config command ((x, y), energy, hunger, thirst, actions) =
-    let weather = actualWeather config
-        movementCost = case weather of
+updateState :: GameConfig -> Int -> String -> GameState -> GameState
+updateState config weather command ((x, y), energy, hunger, thirst, actions) =
+    let movementCost = case weather of
             1 -> 2  -- Soleado: el movimiento cuesta el doble de energía y sed
             4 -> 2  -- Frío: el movimiento cuesta el doble de energía
             _ -> 1  -- Normal
@@ -65,9 +76,12 @@ updateState config command ((x, y), energy, hunger, thirst, actions) =
         thirstAfterMove = if newPosition /= (x, y) then max 0 (thirst - (if weather == 1 then 2 else 1)) else thirst
 
         -- Actualizar cantidad de acciones disponibles si el jugador ejecutó una acción
-        newActions = if command `elem` ["drink_water", "eat_food", "use_wood"] && actions > 0
+        newRemainingActions = if command `elem` ["drink_water", "eat_food", "use_wood"] && actions > 0
                 then actions - 1
                 else actions
+
+        -- Actualizar cantidad de acciones disponibles en dependencia de si se está iniciando un nuevo turno
+        newActions = if command == "change_weather" then initialActions config else newRemainingActions
 
         -- Ajustes según el clima
         newEnergy = if command == "use_wood"
