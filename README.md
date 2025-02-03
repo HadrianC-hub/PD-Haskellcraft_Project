@@ -1,3 +1,7 @@
+# 🕹️ Juego de Supervivencia en Haskell y Python: HASKCRAFT
+
+---
+
 **Desarrollado por:**
 - Adrián Hernández Castellanos (C-312)
 - Laura Martir Beltrán         (C-311)
@@ -5,7 +9,6 @@
 
 ---
 
-# 🕹️ Juego de Supervivencia en Haskell y Python
 
 ## 📖 Descripción
 Este es un juego de estrategia y supervivencia en un entorno de mapa bidimensional. El jugador debe recolectar recursos, administrar su energía, hambre y sed, y competir contra una inteligencia artificial (IA) que toma decisiones basadas en su estado y los recursos disponibles en el mapa.
