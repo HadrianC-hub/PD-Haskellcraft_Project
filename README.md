@@ -1,3 +1,10 @@
+**Desarrollado por:**
+- Adrián Hernández Castellanos (C-312)
+- Laura Martir Beltrán         (C-311)
+- Yesenia Valdés Rodríguez     (C-311)
+
+---
+
 # 🕹️ Juego de Supervivencia en Haskell y Python
 
 ## 📖 Descripción
@@ -68,18 +75,7 @@ python main.py
 - Calcula la energía, hambre y sed consumidos al moverse.
 - Depende del estado del clima.
 
-## 🔧 Mejoras Futuras
-- 🏆 Sistema de puntuaciones y logros.
-- 🔥 Eventos aleatorios que modifiquen el entorno.
-- 🎭 Más interacciones entre el jugador y la IA.
-- 🌎 Generación de mapas procedurales.
 
 ## 📜 Licencia
 Este proyecto es de código abierto bajo la licencia MIT.
-
----
-**Desarrollado por:**
-- Adrián Hernández Castellanos
-- Laura Martir Beltrán
-- Yesenia Valdés Rodríguez
 
